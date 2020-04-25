@@ -109,7 +109,10 @@ public class SelectBuilder<R> {
 		cond[count++] = lhs;
 		hash = 31 * hash + System.identityHashCode(lhs);
 		cond[count++] = type;
-		hash = 31 * hash + System.identityHashCode(type);
+		if (rhs instanceof ComponentLambda) { // RHS can also be a value set to PreparedStatement
+			// So we'll only add it to hash code if it changes SQL string
+			hash = 31 * hash + System.identityHashCode(type);
+		}
 		cond[count++] = rhs;
 		hash = 31 * hash + System.identityHashCode(rhs);
 		
@@ -139,11 +142,24 @@ public class SelectBuilder<R> {
 					if (ourTable.length != theirTable.length) {
 						return false; // Different number of FROM entries
 					} else { // Compare identities of things in the tables
-						for (int i = 0; i < ourTable.length; i++) {
+						for (int i = 0; i < ourTable.length;) {
 							if (ourTable[i] != theirTable[i]) {
-								return false;
+								return false; // LHS mismatch
 							}
+							i++;
+							if (ourTable[i] != theirTable[i]) {
+								return false; // Condition type mismatch
+							}
+							i++;
+							// For RHS, we ignore mismatch if both are literals
+							// (literals do not require SQL changes)
+							if (ourTable[i] != theirTable[i]
+									&& (ourTable[i] instanceof ComponentLambda || theirTable[i] instanceof ComponentLambda)) {
+								return false; // RHS mismatch
+							}
+							i++;
 						}
+
 					}
 				} else {
 					return false; // We have one FROM, they have many
