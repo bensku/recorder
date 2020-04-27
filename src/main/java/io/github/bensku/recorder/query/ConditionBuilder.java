@@ -2,7 +2,7 @@ package io.github.bensku.recorder.query;
 
 import io.github.bensku.recorder.ComponentLambda;
 
-public class ConditionBuilder<R, C> {
+public class ConditionBuilder<R extends Record, C> {
 	
 	enum Type {
 		EQUAL

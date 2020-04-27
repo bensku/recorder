@@ -1,8 +1,10 @@
 package io.github.bensku.recorder.query;
 
+import java.util.Iterator;
+
 import io.github.bensku.recorder.ComponentLambda;
 
-public class SelectBuilder<R> {
+public class SelectBuilder<R extends Record> implements Iterable<R> {
 	
 	/**
 	 * A singular table name, table type, or an array of these.
@@ -35,6 +37,11 @@ public class SelectBuilder<R> {
 	private Order order;
 	
 	/**
+	 * Maximum number of rows that should be returned.
+	 */
+	private int limit;
+	
+	/**
 	 * Current (mutable) hash code.
 	 */
 	private int cachedHash;
@@ -44,6 +51,7 @@ public class SelectBuilder<R> {
 		this.defaultTables = true;
 		this.conditions = new Object[6];
 		this.conditionCount = 0;
+		this.limit = -1;
 		this.cachedHash = 1;
 	}
 	
@@ -131,7 +139,11 @@ public class SelectBuilder<R> {
 		return this;
 	}
 	
-	
+	public SelectBuilder<R> limit(int limit) {
+		this.limit = limit;
+		cachedHash = 31 * cachedHash + limit;
+		return this;
+	}
 	
 	@Override
 	public boolean equals(Object o) {
@@ -189,6 +201,9 @@ public class SelectBuilder<R> {
 			}
 			
 			// And limit, too
+			if (limit != b.limit) {
+				return false;
+			}
 			
 			// It seems that all checks passed
 			return true;
@@ -199,5 +214,11 @@ public class SelectBuilder<R> {
 	@Override
 	public int hashCode() {
 		return cachedHash;
+	}
+
+	@Override
+	public Iterator<R> iterator() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }
