@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import io.github.bensku.recorder.sql.Column;
+import io.github.bensku.recorder.sql.JavaType;
 import io.github.bensku.recorder.sql.Table;
 import io.github.bensku.recorder.sql.constraint.Constraint;
 
@@ -53,7 +54,7 @@ public interface SqlAdapter {
 	 * @param javaType Java class.
 	 * @return String representing an SQL type.
 	 */
-	String sqlType(Class<?> javaType);
+	String sqlType(JavaType javaType);
 	
 	/**
 	 * Maps given constraint to a string understood by the database.

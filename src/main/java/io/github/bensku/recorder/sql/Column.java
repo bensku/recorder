@@ -16,7 +16,7 @@ public record Column(
 		/**
 		 * Data type of this column.
 		 */
-		Class<?> type,
+		JavaType type,
 		
 		/**
 		 * Constraints specific to this column.
