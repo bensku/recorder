@@ -7,6 +7,11 @@ package io.github.bensku.recorder.sql;
 public record Table(
 		
 		/**
+		 * Record that this table represents.
+		 */
+		JavaType record,
+		
+		/**
 		 * Name of the table.
 		 */
 		String name,
@@ -18,6 +23,7 @@ public record Table(
 		
 		/**
 		 * Primary key column. It is also contained in {@link #columns()}.
+		 * Can be null if the table doesn't have a primary key.
 		 */
 		Column primaryKey
 ) {}

@@ -1,5 +1,7 @@
 plugins {
     id 'java-library'
+    id 'org.javamodularity.moduleplugin' version '1.7.0'
+    id 'eclipse'
 }
 
 sourceCompatibility = 14
@@ -25,4 +27,17 @@ tasks.withType(JavaCompile) {
 }
 tasks.withType(Test) {
     jvmArgs += "--enable-preview"
+}
+
+eclipse.classpath.file {
+    whenMerged {
+        // All libraries except JUnit to module path (Eclipse+Gradle support for JPMS is garbage)
+        entries.findAll { it.kind == 'lib' && !it.sourcePath.path.contains('junit') }.each { it.entryAttributes['module'] = 'true' }
+    }
+}
+
+test {
+    moduleOptions {
+        runOnClasspath = true
+    }
 }
