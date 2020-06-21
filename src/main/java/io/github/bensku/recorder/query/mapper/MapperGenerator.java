@@ -1,6 +1,5 @@
 package io.github.bensku.recorder.query.mapper;
 
-import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -29,6 +28,7 @@ public class MapperGenerator implements Opcodes {
 	private static final String LONG_GET, LONG_SET;
 	private static final String FLOAT_GET, FLOAT_SET;
 	private static final String DOUBLE_GET, DOUBLE_SET;
+	private static final String STRING_GET, STRING_SET;
 	private static final String OBJECT_GET, OBJECT_SET;
 
 	static {
@@ -37,34 +37,37 @@ public class MapperGenerator implements Opcodes {
 
 		try {
 			READ_DESC = Type.getMethodDescriptor(RecordMapper.class.getDeclaredMethod(READ_NAME, ResultSet.class));
-			WRITE_DESC = Type.getMethodDescriptor(RecordMapper.class.getDeclaredMethod(WRITE_NAME, ResultSet.class));
+			WRITE_DESC = Type.getMethodDescriptor(RecordMapper.class.getDeclaredMethod(WRITE_NAME, PreparedStatement.class, Record.class));
 
 			RESULT_SET = Type.getInternalName(ResultSet.class);
 			PREPARED_STATEMENT = Type.getInternalName(PreparedStatement.class);
 
-			BOOLEAN_GET = Type.getMethodDescriptor(ResultSet.class.getDeclaredMethod("getBoolean"));
-			BOOLEAN_SET = Type.getMethodDescriptor(PreparedStatement.class.getDeclaredMethod("setBoolean", boolean.class));
+			BOOLEAN_GET = Type.getMethodDescriptor(ResultSet.class.getDeclaredMethod("getBoolean", int.class));
+			BOOLEAN_SET = Type.getMethodDescriptor(PreparedStatement.class.getDeclaredMethod("setBoolean", int.class, boolean.class));
 
-			BYTE_GET = Type.getMethodDescriptor(ResultSet.class.getDeclaredMethod("getByte"));
-			BYTE_SET = Type.getMethodDescriptor(PreparedStatement.class.getDeclaredMethod("setByte", byte.class));
+			BYTE_GET = Type.getMethodDescriptor(ResultSet.class.getDeclaredMethod("getByte", int.class));
+			BYTE_SET = Type.getMethodDescriptor(PreparedStatement.class.getDeclaredMethod("setByte", int.class, byte.class));
 
-			SHORT_GET = Type.getMethodDescriptor(ResultSet.class.getDeclaredMethod("getShort"));
-			SHORT_SET = Type.getMethodDescriptor(PreparedStatement.class.getDeclaredMethod("setShort", short.class));
+			SHORT_GET = Type.getMethodDescriptor(ResultSet.class.getDeclaredMethod("getShort", int.class));
+			SHORT_SET = Type.getMethodDescriptor(PreparedStatement.class.getDeclaredMethod("setShort", int.class, short.class));
 
-			INT_GET = Type.getMethodDescriptor(ResultSet.class.getDeclaredMethod("getInt"));
-			INT_SET = Type.getMethodDescriptor(PreparedStatement.class.getDeclaredMethod("setInt", int.class));
+			INT_GET = Type.getMethodDescriptor(ResultSet.class.getDeclaredMethod("getInt", int.class));
+			INT_SET = Type.getMethodDescriptor(PreparedStatement.class.getDeclaredMethod("setInt", int.class, int.class));
 
-			LONG_GET = Type.getMethodDescriptor(ResultSet.class.getDeclaredMethod("getLong"));
-			LONG_SET = Type.getMethodDescriptor(PreparedStatement.class.getDeclaredMethod("setLong", long.class));
+			LONG_GET = Type.getMethodDescriptor(ResultSet.class.getDeclaredMethod("getLong", int.class));
+			LONG_SET = Type.getMethodDescriptor(PreparedStatement.class.getDeclaredMethod("setLong", int.class, long.class));
 
-			FLOAT_GET = Type.getMethodDescriptor(ResultSet.class.getDeclaredMethod("getFloat"));
-			FLOAT_SET = Type.getMethodDescriptor(PreparedStatement.class.getDeclaredMethod("setFloat", float.class));
+			FLOAT_GET = Type.getMethodDescriptor(ResultSet.class.getDeclaredMethod("getFloat", int.class));
+			FLOAT_SET = Type.getMethodDescriptor(PreparedStatement.class.getDeclaredMethod("setFloat", int.class, float.class));
 
-			DOUBLE_GET = Type.getMethodDescriptor(ResultSet.class.getDeclaredMethod("getDouble"));
-			DOUBLE_SET = Type.getMethodDescriptor(PreparedStatement.class.getDeclaredMethod("setDouble", double.class));
+			DOUBLE_GET = Type.getMethodDescriptor(ResultSet.class.getDeclaredMethod("getDouble", int.class));
+			DOUBLE_SET = Type.getMethodDescriptor(PreparedStatement.class.getDeclaredMethod("setDouble", int.class, double.class));
+			
+			STRING_GET = Type.getMethodDescriptor(ResultSet.class.getDeclaredMethod("getString", int.class));
+			STRING_SET = Type.getMethodDescriptor(PreparedStatement.class.getDeclaredMethod("setString", int.class, String.class));
 
-			OBJECT_GET = Type.getMethodDescriptor(ResultSet.class.getDeclaredMethod("getObject"));
-			OBJECT_SET = Type.getMethodDescriptor(PreparedStatement.class.getDeclaredMethod("setObject", Object.class));
+			OBJECT_GET = Type.getMethodDescriptor(ResultSet.class.getDeclaredMethod("getObject", int.class, Class.class));
+			OBJECT_SET = Type.getMethodDescriptor(PreparedStatement.class.getDeclaredMethod("setObject", int.class, Object.class));
 		} catch (NoSuchMethodException | SecurityException e) {
 			throw new AssertionError(e);
 		}
@@ -76,15 +79,21 @@ public class MapperGenerator implements Opcodes {
 		this.tableSource = tableSource;
 	}
 
+	/**
+	 * Creates a record mapper by generating and loading JVM bytecode.
+	 * @param type Java type.
+	 * @return A new record mapper.
+	 */
 	public RecordMapper<?> create(JavaType type) {
 		Table table = tableSource.get(type);
-		String name = table.name() + "$RecordMapper";
+		String name = type.internalName() + "$Mapper";
 		byte[] code = createMapper(name, table.columns(), table.record().internalName());
 
 		// Load class
-		// TODO once JDK 15 lands, use loadAnonymousClass (allows GC to work)
+		// TODO once JDK 15 lands, use loadAnonymousClass
 		try {
-			Class<?> clazz = MethodHandles.lookup().defineClass(code);
+			SingleClassLoader loader = new SingleClassLoader(code);
+			Class<?> clazz = loader.findClass(null);
 			return (RecordMapper<?>) clazz.getConstructor().newInstance();
 		} catch (IllegalAccessException | InstantiationException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
 			throw new AssertionError("loading created mapper failed", e);
@@ -106,9 +115,11 @@ public class MapperGenerator implements Opcodes {
 
 		// Make a constructor
 		MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
+		mv.visitCode();
 		mv.visitVarInsn(ALOAD, 0); // this
 		mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false); // super()
 		mv.visitInsn(RETURN);
+		mv.visitMaxs(1, 1);
 
 		// Add methods to read/write
 		createRead(cw, columns, recordType);
@@ -120,33 +131,32 @@ public class MapperGenerator implements Opcodes {
 	private void createRead(ClassWriter cw, Column[] columns, String recordType) {
 		MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, READ_NAME, READ_DESC, null, null);
 		mv.visitCode();
+		
+		// Create new record (do not instantiate yet)
+		mv.visitTypeInsn(NEW, recordType);
+		mv.visitInsn(DUP);
 
 		// Read ResultSet values to stack
+		int stack = 4;
 		for (int i = 0; i < columns.length; i++) {
 			mv.visitVarInsn(ALOAD, 1); // ResultSet
 			mv.visitLdcInsn(i); // Argument index
 
 			emitRead(mv, columns[i].type());
+			stack += columns[i].type().equals(JavaType.LONG) || columns[i].type().equals(JavaType.DOUBLE) ? 2 : 1;
 		}
-		
-		// Create new record (do not instantiate yet)
-		mv.visitTypeInsn(NEW, recordType);
-		mv.visitInsn(DUP);
-		mv.visitVarInsn(ASTORE, 2); // For returning from this method
-		
-		// Call constructor to instantiate
+				
+		// Call constructor with values from top of stack
 		Type[] arguments = Arrays.stream(columns)
 				.map(Column::type)
-				.map(JavaType::internalName)
-				.map(Type::getType)
+				.map(JavaType::toAsmType)
 				.toArray(Type[]::new);
 		mv.visitMethodInsn(INVOKESPECIAL, recordType, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, arguments), false);
 		
-		// Load from stack and return
-		mv.visitVarInsn(ALOAD, 2);
-		mv.visitInsn(RETURN);
+		// Take the original record reference (not DUP'd one) and return
+		mv.visitInsn(ARETURN);
 
-		mv.visitMaxs(columns.length + 2, 3);
+		mv.visitMaxs(stack, 4);
 		mv.visitEnd();
 	}
 	
@@ -170,8 +180,12 @@ public class MapperGenerator implements Opcodes {
 			mv.visitMethodInsn(INVOKEINTERFACE, RESULT_SET, "getFloat", FLOAT_GET, true);
 		} else if (type.equals(JavaType.DOUBLE)) {
 			mv.visitMethodInsn(INVOKEINTERFACE, RESULT_SET, "getDouble", DOUBLE_GET, true);
+		} else if (type.equals(JavaType.STRING)) {
+			mv.visitMethodInsn(INVOKEINTERFACE, RESULT_SET, "getString", STRING_GET, true);
 		} else {
+			mv.visitLdcInsn(type.toAsmType()); // Wanted type as second parameter
 			mv.visitMethodInsn(INVOKEINTERFACE, RESULT_SET, "getObject", OBJECT_GET, true);
+			mv.visitTypeInsn(CHECKCAST, type.internalName()); // In bytecode, generic return is just Object
 		}
 	}
 
@@ -185,15 +199,16 @@ public class MapperGenerator implements Opcodes {
 			
 			// Get component from record
 			mv.visitVarInsn(ALOAD, 2); // Record
-			mv.visitMethodInsn(INVOKESPECIAL, recordType, columns[i].name(),
-					Type.getMethodDescriptor(Type.getObjectType(columns[i].type().internalName())), false);
+			mv.visitTypeInsn(CHECKCAST, recordType); // Generic method, (check) cast
+			mv.visitMethodInsn(INVOKEVIRTUAL, recordType, columns[i].name(),
+					Type.getMethodDescriptor(columns[i].type().toAsmType()), false);
 			
 			emitWrite(mv, columns[i].type());
 		}
 		
 		mv.visitInsn(RETURN); // All methods must return
 
-		mv.visitMaxs(3, 3);
+		mv.visitMaxs(4, 3);
 		mv.visitEnd();
 	}
 	
@@ -217,6 +232,8 @@ public class MapperGenerator implements Opcodes {
 			mv.visitMethodInsn(INVOKEINTERFACE, PREPARED_STATEMENT, "setFloat", FLOAT_SET, true);
 		} else if (type.equals(JavaType.DOUBLE)) {
 			mv.visitMethodInsn(INVOKEINTERFACE, PREPARED_STATEMENT, "setDouble", DOUBLE_SET, true);
+		} else if (type.equals(JavaType.STRING)) {
+			mv.visitMethodInsn(INVOKEINTERFACE, PREPARED_STATEMENT, "setString", STRING_SET, true);
 		} else {
 			mv.visitMethodInsn(INVOKEINTERFACE, PREPARED_STATEMENT, "setObject", OBJECT_SET, true);
 		}

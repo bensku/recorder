@@ -1,7 +1,5 @@
 plugins {
     id 'java-library'
-    id 'org.javamodularity.moduleplugin' version '1.7.0'
-    id 'eclipse'
 }
 
 sourceCompatibility = 14
@@ -15,6 +13,7 @@ dependencies {
 	implementation 'org.ow2.asm:asm:8.0.1'
 	
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.2'
+    testImplementation 'org.mockito:mockito-junit-jupiter:3.3.3'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.2'
 }
 
@@ -27,17 +26,4 @@ tasks.withType(JavaCompile) {
 }
 tasks.withType(Test) {
     jvmArgs += "--enable-preview"
-}
-
-eclipse.classpath.file {
-    whenMerged {
-        // All libraries except JUnit to module path (Eclipse+Gradle support for JPMS is garbage)
-        entries.findAll { it.kind == 'lib' && !it.sourcePath.path.contains('junit') }.each { it.entryAttributes['module'] = 'true' }
-    }
-}
-
-test {
-    moduleOptions {
-        runOnClasspath = true
-    }
 }

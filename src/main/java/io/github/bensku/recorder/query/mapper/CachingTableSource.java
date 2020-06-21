@@ -6,7 +6,10 @@ import io.github.bensku.recorder.sql.JavaType;
 import io.github.bensku.recorder.sql.Table;
 
 public class CachingTableSource implements TableSource {
-	
+
+	/**
+	 * Cached table definitions.
+	 */
 	private final Map<JavaType, Table> definitions;
 	private final TableSource source;
 	
