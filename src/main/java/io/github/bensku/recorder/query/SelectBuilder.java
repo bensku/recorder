@@ -1,10 +1,19 @@
 package io.github.bensku.recorder.query;
 
-import java.util.Iterator;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 import io.github.bensku.recorder.ComponentLambda;
+import io.github.bensku.recorder.sql.Condition;
+import io.github.bensku.recorder.sql.adapter.SqlAdapter;
 
-public class SelectBuilder<R extends Record> implements Iterable<R> {
+public class SelectBuilder<R extends Record> {
+	
+	private final RecorderQuery<SelectBuilder<R>, R> query;
 	
 	/**
 	 * A singular table name, table type, or an array of these.
@@ -46,7 +55,8 @@ public class SelectBuilder<R extends Record> implements Iterable<R> {
 	 */
 	private int cachedHash;
 	
-	SelectBuilder(Class<? extends Record> table) {
+	SelectBuilder(RecorderQuery<SelectBuilder<R>, R> query, Class<? extends Record> table) {
+		this.query = query;
 		this.tables = table;
 		this.defaultTables = true;
 		this.conditions = new Object[6];
@@ -102,7 +112,7 @@ public class SelectBuilder<R extends Record> implements Iterable<R> {
 		return new ConditionBuilder<>(this, lhs);
 	}
 	
-	<C> void addCondition(ComponentLambda<?, C> lhs, ConditionBuilder.Type type, Object rhs) {
+	<C> void addCondition(ComponentLambda<?, C> lhs, Condition.Type type, Object rhs) {
 		Object[] cond = conditions;
 		int count = conditionCount;
 		int hash = cachedHash;
@@ -140,9 +150,50 @@ public class SelectBuilder<R extends Record> implements Iterable<R> {
 	}
 	
 	public SelectBuilder<R> limit(int limit) {
+		if (this.limit != -1) {
+			throw new IllegalStateException("limit already set to " + this.limit);
+		}
 		this.limit = limit;
 		cachedHash = 31 * cachedHash + limit;
 		return this;
+	}
+	
+	private String makeSql(SqlAdapter adapter, SelectBuilder<R> unused) {
+		
+	}
+	
+	private void setParams(PreparedStatement stmt) {
+		
+	}
+	
+	private R mapRow(ResultSet row) {
+		return query.mapper().read(row);
+	}
+	
+	public Optional<R> first() throws SQLException {
+		if (limit == -1) { // No limit requested...
+			limit(1); // Fetch only one row, this might improve performance
+		}
+		PreparedStatement stmt = query.prepareStatement(this, this::makeSql);
+		setParams(stmt);
+		
+		try (ResultSet results = stmt.executeQuery()) {
+			if (results.next()) {
+				return Optional.of(mapRow(results));
+			} else {
+				return Optional.empty();
+			}
+		}
+		
+		// TODO close query/connection
+	}
+	
+	public List<R> all() {
+		
+	}
+	
+	public Stream<R> stream() {
+		
 	}
 	
 	@Override
@@ -214,11 +265,5 @@ public class SelectBuilder<R extends Record> implements Iterable<R> {
 	@Override
 	public int hashCode() {
 		return cachedHash;
-	}
-
-	@Override
-	public Iterator<R> iterator() {
-		// TODO Auto-generated method stub
-		return null;
 	}
 }

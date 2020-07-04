@@ -1,12 +1,9 @@
 package io.github.bensku.recorder.query;
 
 import io.github.bensku.recorder.ComponentLambda;
+import io.github.bensku.recorder.sql.Condition.Type;
 
 public class ConditionBuilder<R extends Record, C> {
-	
-	enum Type {
-		EQUAL
-	}
 	
 	/**
 	 * Query that this condition is part of.

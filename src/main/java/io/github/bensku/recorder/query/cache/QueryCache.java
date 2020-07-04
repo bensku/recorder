@@ -11,7 +11,7 @@ import io.github.bensku.recorder.query.SelectBuilder;
  * SQL strings of statements.
  * @param <T> Type of keys used for lookups.
  */
-public class StatementCache<T> {
+public class QueryCache<T> {
 	
 	private class NewGenEntry {
 		public final String sql;
@@ -42,7 +42,7 @@ public class StatementCache<T> {
 	 */
 	private final Map<T, String> oldGen;
 	
-	public StatementCache(int newGenSize, int promoteThreshold) {
+	public QueryCache(int newGenSize, int promoteThreshold) {
 		this.newGen = new LinkedHashMap<>(newGenSize) {
 			private static final long serialVersionUID = 1L;
 

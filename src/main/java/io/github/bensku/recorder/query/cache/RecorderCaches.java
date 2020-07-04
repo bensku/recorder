@@ -7,5 +7,5 @@ import io.github.bensku.recorder.query.SelectBuilder;
  *
  */
 public record RecorderCaches(
-		StatementCache<SelectBuilder<?>> select
+		QueryCache<SelectBuilder<?>> select
 ) {}

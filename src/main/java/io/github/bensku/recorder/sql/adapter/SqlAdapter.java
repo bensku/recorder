@@ -1,6 +1,7 @@
 package io.github.bensku.recorder.sql.adapter;
 
 import java.util.Arrays;
+import java.util.concurrent.locks.Condition;
 import java.util.stream.Collectors;
 
 import io.github.bensku.recorder.sql.Column;
@@ -47,6 +48,26 @@ public interface SqlAdapter {
 	 */
 	default String columnConstraints(Constraint[] constraints) {
 		return Arrays.stream(constraints).map(this::constraint).collect(Collectors.joining(" "));
+	}
+	
+	default String select(Column[] columns, String table, Condition[] conditions) {
+		StringBuilder sb = new StringBuilder("SELECT ");
+		
+		// All columns given (not necessarily all table columns)
+		for (int i = 0; i < columns.length - 1; i++) {
+			sb.append(columns[i].name()).append(',');
+		}
+		sb.append(columns[columns.length - 1].name()); // Last without comma at end
+		
+		// From table with given name
+		sb.append(" FROM ").append(table);
+		
+		if (conditions.length > 0) {
+			sb.append(" WHERE ");
+			// TODO Condition -> standard SQL string
+		}
+		
+		return sb.toString();
 	}
 	
 	/**
