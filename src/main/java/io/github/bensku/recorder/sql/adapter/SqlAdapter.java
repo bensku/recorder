@@ -64,7 +64,9 @@ public interface SqlAdapter {
 		
 		if (conditions.length > 0) {
 			sb.append(" WHERE ");
-			// TODO Condition -> standard SQL string
+			for (int i = 0; i < conditions.length - 1; i++) {
+				// TODO
+			}
 		}
 		
 		return sb.toString();

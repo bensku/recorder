@@ -174,18 +174,19 @@ public class SelectBuilder<R extends Record> {
 		if (limit == -1) { // No limit requested...
 			limit(1); // Fetch only one row, this might improve performance
 		}
-		PreparedStatement stmt = query.prepareStatement(this, this::makeSql);
-		setParams(stmt);
-		
-		try (ResultSet results = stmt.executeQuery()) {
-			if (results.next()) {
-				return Optional.of(mapRow(results));
-			} else {
-				return Optional.empty();
+		try (PreparedStatement stmt = query.prepareStatement(this, this::makeSql)) {
+			setParams(stmt);
+			
+			try (ResultSet results = stmt.executeQuery()) {
+				if (results.next()) {
+					return Optional.of(mapRow(results));
+				} else {
+					return Optional.empty();
+				}
 			}
+		} finally {
+			query.close();
 		}
-		
-		// TODO close query/connection
 	}
 	
 	public List<R> all() {
