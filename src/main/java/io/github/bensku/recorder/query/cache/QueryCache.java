@@ -14,11 +14,11 @@ import io.github.bensku.recorder.query.SelectBuilder;
 public class QueryCache<T> {
 	
 	private class NewGenEntry {
-		public final String sql;
+		public final CachedQuery query;
 		public int usedCount;
 		
-		public NewGenEntry(String sql) {
-			this.sql = sql;
+		public NewGenEntry(CachedQuery query) {
+			this.query = query;
 			this.usedCount = 0;
 		}
 	}
@@ -40,7 +40,7 @@ public class QueryCache<T> {
 	 * The old generation cache contains statements that have been promoted
 	 * from the new generation cache. Statements are never dropped from it.
 	 */
-	private final Map<T, String> oldGen;
+	private final Map<T, CachedQuery> oldGen;
 	
 	public QueryCache(int newGenSize, int promoteThreshold) {
 		this.newGen = new LinkedHashMap<>(newGenSize) {
@@ -58,21 +58,21 @@ public class QueryCache<T> {
 	/**
 	 * Attempts to get SQL corresponding to the given key.
 	 * @param key Key, e.g. {@link SelectBuilder}.
-	 * @return SQL string or null if it is not in this cache.
+	 * @return Cached query data or null if it is not in this cache.
 	 */
-	public String get(T key) {
-		String sql = oldGen.get(key);
-		if (sql != null) { // Found from old gen
-			return sql;
+	public CachedQuery get(T key) {
+		CachedQuery query = oldGen.get(key);
+		if (query != null) { // Found from old gen
+			return query;
 		}
 		NewGenEntry entry = newGen.get(key);
 		if (entry != null) { // Found from new gen
 			entry.usedCount++;
 			if (entry.usedCount == promoteTreshold) { // Promote to old gen if it has been used enough
 				newGen.remove(entry);
-				oldGen.put(key, sql);
+				oldGen.put(key, query);
 			}
-			return entry.sql;
+			return entry.query;
 		}
 		
 		return null; // Not found at all
@@ -81,9 +81,9 @@ public class QueryCache<T> {
 	/**
 	 * Puts an SQL string to this cache.
 	 * @param key Key for it.
-	 * @param sql SQL string to cache.
+	 * @param query Cached query data.
 	 */
-	public void put(T key, String sql) {
-		newGen.put(key, new NewGenEntry(sql)); // Put to new gen
+	public void put(T key, CachedQuery query) {
+		newGen.put(key, new NewGenEntry(query)); // Put to new gen
 	}
 }

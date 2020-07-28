@@ -3,12 +3,15 @@ package io.github.bensku.recorder.query;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.github.bensku.recorder.ComponentLambda;
+import io.github.bensku.recorder.query.cache.CachedQuery;
 import io.github.bensku.recorder.sql.Condition;
+import io.github.bensku.recorder.sql.Value;
 import io.github.bensku.recorder.sql.adapter.SqlAdapter;
 
 public class SelectBuilder<R extends Record> {
@@ -158,12 +161,60 @@ public class SelectBuilder<R extends Record> {
 		return this;
 	}
 	
-	private String makeSql(SqlAdapter adapter, SelectBuilder<R> unused) {
+	/**
+	 * Computes a cacheable query.
+	 * @param adapter Database-specific SQL generator.
+	 * @param unused Same as this. Use this instead.
+	 * @return Query.
+	 */
+	private CachedQuery computeQuery(SqlAdapter adapter, SelectBuilder<R> unused) {
+		String[] columns = null; // TODO how to get correct table source here?
 		
+		// Figure out table names depending on how tables have been specified
+		String[] tableNames;
+		if (tables instanceof String[]) {
+			tableNames = (String[]) tables;
+		} else if (tables instanceof String) {
+			tableNames = new String[] {(String) tables};
+		} // TODO need table source for class -> table name (because @TableName annotation)
+		
+		// Process our conditions (and figure out parameters for them)
+		Condition[] cond = new Condition[conditions.length / 3];
+		List<Integer> paramIndices = new ArrayList<>(); // TODO avoid boxed Integer
+		for (int i = 0; i < conditions.length; i += 3) {
+			// By convention, LHS in always column reference in Recorder
+			// TODO annotation support to rename database field (in ComponentLambda or here?)
+			Value lhs = new Value(((ComponentLambda<?, ?>) conditions[i]).lookupComponent().name());
+			Condition.Type type = (Condition.Type) conditions[i + 1]; // Condition type is same
+			
+			// RHS can be either column reference or (parameter) value
+			Value rhs;
+			if (conditions[i + 2] instanceof ComponentLambda<?, ?> l) {
+				rhs = new Value(l.lookupComponent().name()); // Column reference, works same as LHS
+			} else {
+				rhs = Value.param(); // PreparedStatement parameter for WHERE
+				paramIndices.add(i); // Usage: stmt.setObject(i + 1, conditions[indices[i])
+				
+			}
+			cond[i / 3] = new Condition(lhs, type, rhs);
+		}
+		
+		// Let adapter for current database generate SQL for us
+		String sql = adapter.select(columns, tableNames, cond);
+		return new CachedQuery(sql, paramIndices.stream().mapToInt(i -> i).toArray());
 	}
 	
-	private void setParams(PreparedStatement stmt) {
+	public PreparedStatement prepareStatement() throws SQLException {
+		CachedQuery cached = query.computeQuery(this, this::computeQuery);
+		PreparedStatement stmt = query.prepareStatement(cached.sql());
 		
+		// Apply condition parameters
+		int[] indices = cached.parameterSources();
+		for (int i = 0; i < indices.length; i++) {
+			stmt.setObject(i + 1, conditions[indices[i]]);
+		}
+		
+		return stmt;
 	}
 	
 	private R mapRow(ResultSet row) {
@@ -174,9 +225,7 @@ public class SelectBuilder<R extends Record> {
 		if (limit == -1) { // No limit requested...
 			limit(1); // Fetch only one row, this might improve performance
 		}
-		try (PreparedStatement stmt = query.prepareStatement(this, this::makeSql)) {
-			setParams(stmt);
-			
+		try (PreparedStatement stmt = prepareStatement()) {
 			try (ResultSet results = stmt.executeQuery()) {
 				if (results.next()) {
 					return Optional.of(mapRow(results));

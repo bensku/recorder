@@ -4,9 +4,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import io.github.bensku.recorder.query.cache.CachedQuery;
 import io.github.bensku.recorder.query.cache.QueryCache;
 import io.github.bensku.recorder.query.mapper.RecordMapper;
-import io.github.bensku.recorder.sql.SqlGenerator;
+import io.github.bensku.recorder.sql.QueryGenerator;
 import io.github.bensku.recorder.sql.adapter.SqlAdapter;
 
 public class RecorderQuery<T, R extends Record> {
@@ -38,21 +39,17 @@ public class RecorderQuery<T, R extends Record> {
 		this.mapper = mapper;
 	}
 	
-	public String computeSql(T query, SqlGenerator<T> generator) {
-		String sql = cache.get(query);
-		if (sql == null) { // Put to cache
-			sql = generator.generate(adapter, query);
-			cache.put(query, sql);
+	public CachedQuery computeQuery(T builder, QueryGenerator<T> generator) {
+		CachedQuery query = cache.get(builder);
+		if (query == null) { // Put to cache
+			query = generator.generate(adapter, builder);
+			cache.put(builder, query);
 		}
-		return sql;
+		return query;
 	}
 	
 	public PreparedStatement prepareStatement(String sql) throws SQLException {
 		return conn.prepareStatement(sql);
-	}
-	
-	public PreparedStatement prepareStatement(T query, SqlGenerator<T> generator) throws SQLException {
-		return prepareStatement(computeSql(query, generator));
 	}
 	
 	public RecordMapper<R> mapper() {

@@ -1,10 +1,10 @@
 package io.github.bensku.recorder.sql.adapter;
 
 import java.util.Arrays;
-import java.util.concurrent.locks.Condition;
 import java.util.stream.Collectors;
 
 import io.github.bensku.recorder.sql.Column;
+import io.github.bensku.recorder.sql.Condition;
 import io.github.bensku.recorder.sql.JavaType;
 import io.github.bensku.recorder.sql.Table;
 import io.github.bensku.recorder.sql.constraint.Constraint;
@@ -50,26 +50,37 @@ public interface SqlAdapter {
 		return Arrays.stream(constraints).map(this::constraint).collect(Collectors.joining(" "));
 	}
 	
-	default String select(Column[] columns, String table, Condition[] conditions) {
-		StringBuilder sb = new StringBuilder("SELECT ");
-		
+	default String select(String[] columns, String[] tables, Condition[] conditions) {		
 		// All columns given (not necessarily all table columns)
+		StringBuilder sb = new StringBuilder("SELECT ");
 		for (int i = 0; i < columns.length - 1; i++) {
-			sb.append(columns[i].name()).append(',');
+			sb.append(columns[i]).append(',');
 		}
-		sb.append(columns[columns.length - 1].name()); // Last without comma at end
+		sb.append(columns[columns.length - 1]); // Last without comma at end
 		
 		// From table with given name
-		sb.append(" FROM ").append(table);
+		sb.append(" FROM ");
+		for (int i = 0; i < tables.length - 1; i++) {
+			sb.append(tables[i]).append(',');
+		}
+		sb.append(tables[tables.length - 1]);
 		
+		// With given conditions
 		if (conditions.length > 0) {
 			sb.append(" WHERE ");
 			for (int i = 0; i < conditions.length - 1; i++) {
-				// TODO
+				Condition cond = conditions[i];
+				sb.append(cond.lhs().sql()).append(conditionType(cond.type())).append(cond.rhs().sql()).append(',');
 			}
 		}
 		
 		return sb.toString();
+	}
+	
+	default String conditionType(Condition.Type type) {
+		return switch (type) {
+		case EQUAL -> "=";
+		};
 	}
 	
 	/**
