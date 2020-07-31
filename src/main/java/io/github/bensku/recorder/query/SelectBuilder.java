@@ -6,17 +6,20 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import io.github.bensku.recorder.ComponentLambda;
-import io.github.bensku.recorder.query.cache.CachedQuery;
+import io.github.bensku.recorder.cache.CachedQuery;
 import io.github.bensku.recorder.sql.Condition;
 import io.github.bensku.recorder.sql.Value;
 import io.github.bensku.recorder.sql.adapter.SqlAdapter;
 
 public class SelectBuilder<R extends Record> {
 	
-	private final RecorderQuery<SelectBuilder<R>, R> query;
+	/**
+	 * Query helper, used for generating a query from
+	 * this builder and executing it.
+	 */
+	private final QueryHelper<SelectBuilder<R>, R> helper;
 	
 	/**
 	 * A singular table name, table type, or an array of these.
@@ -58,8 +61,8 @@ public class SelectBuilder<R extends Record> {
 	 */
 	private int cachedHash;
 	
-	SelectBuilder(RecorderQuery<SelectBuilder<R>, R> query, Class<? extends Record> table) {
-		this.query = query;
+	public SelectBuilder(QueryHelper<SelectBuilder<R>, R> helper, Class<R> table) {
+		this.helper = helper;
 		this.tables = table;
 		this.defaultTables = true;
 		this.conditions = new Object[6];
@@ -172,15 +175,28 @@ public class SelectBuilder<R extends Record> {
 		
 		// Figure out table names depending on how tables have been specified
 		String[] tableNames;
-		if (tables instanceof String[]) {
-			tableNames = (String[]) tables;
-		} else if (tables instanceof String) {
-			tableNames = new String[] {(String) tables};
-		} // TODO need table source for class -> table name (because @TableName annotation)
+		if (tables instanceof String[] names) {
+			tableNames = names;
+		} else if (tables instanceof String name) {
+			tableNames = new String[] {name};
+		} else if (tables instanceof Class<?>[] types) {
+			tableNames = new String[types.length];
+			for (int i = 0; i < types.length; i++) {
+				@SuppressWarnings("unchecked") // Safe unless where(types) is called with unsafe cast
+				String name = helper.getTable((Class<? extends Record>) types[i]).name();
+				tableNames[i] = name;
+			}
+		} else if (tables instanceof Class<?> type) {
+			@SuppressWarnings("unchecked") // Safe unless where(type) is called with unsafe cast
+			String name = helper.getTable((Class<? extends Record>) type).name();
+			tableNames = new String [] {name};
+		} else {
+			throw new AssertionError("unknown tables type " + tables);
+		}
 		
 		// Process our conditions (and figure out parameters for them)
 		Condition[] cond = new Condition[conditions.length / 3];
-		List<Integer> paramIndices = new ArrayList<>(); // TODO avoid boxed Integer
+		List<Integer> paramIndices = new ArrayList<>(); // TODO avoid boxing?
 		for (int i = 0; i < conditions.length; i += 3) {
 			// By convention, LHS in always column reference in Recorder
 			// TODO annotation support to rename database field (in ComponentLambda or here?)
@@ -205,8 +221,8 @@ public class SelectBuilder<R extends Record> {
 	}
 	
 	public PreparedStatement prepareStatement() throws SQLException {
-		CachedQuery cached = query.computeQuery(this, this::computeQuery);
-		PreparedStatement stmt = query.prepareStatement(cached.sql());
+		CachedQuery cached = helper.getQuery(this, this::computeQuery);
+		PreparedStatement stmt = helper.prepareStatement(cached.sql());
 		
 		// Apply condition parameters
 		int[] indices = cached.parameterSources();
@@ -218,12 +234,12 @@ public class SelectBuilder<R extends Record> {
 	}
 	
 	private R mapRow(ResultSet row) {
-		return query.mapper().read(row);
+		return helper.mapper().read(row);
 	}
 	
 	public Optional<R> first() throws SQLException {
 		if (limit == -1) { // No limit requested...
-			limit(1); // Fetch only one row, this might improve performance
+			limit(1); // Fetch only one row, might improve performance
 		}
 		try (PreparedStatement stmt = prepareStatement()) {
 			try (ResultSet results = stmt.executeQuery()) {
@@ -234,17 +250,25 @@ public class SelectBuilder<R extends Record> {
 				}
 			}
 		} finally {
-			query.close();
+			helper.close();
 		}
 	}
 	
-	public List<R> all() {
-		
+	public List<R> all() throws SQLException {
+		try (PreparedStatement stmt = prepareStatement()) {
+			try (ResultSet results = stmt.executeQuery()) {
+				List<R> list = new ArrayList<>();
+				while (results.next()) {
+					list.add(mapRow(results));
+				}
+				return list;
+			}
+		} finally {
+			helper.close();
+		}
 	}
 	
-	public Stream<R> stream() {
-		
-	}
+	// TODO stream-based API
 	
 	@Override
 	public boolean equals(Object o) {

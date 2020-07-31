@@ -1,4 +1,4 @@
-package io.github.bensku.recorder.query.cache;
+package io.github.bensku.recorder.cache;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -11,7 +11,7 @@ import io.github.bensku.recorder.query.SelectBuilder;
  * SQL strings of statements.
  * @param <T> Type of keys used for lookups.
  */
-public class QueryCache<T> {
+public class QueryCache<T> implements Cache<T, CachedQuery> {
 	
 	private class NewGenEntry {
 		public final CachedQuery query;

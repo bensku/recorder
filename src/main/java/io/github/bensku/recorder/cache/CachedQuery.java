@@ -1,4 +1,4 @@
-package io.github.bensku.recorder.query.cache;
+package io.github.bensku.recorder.cache;
 
 /**
  * Cached SQL query.
