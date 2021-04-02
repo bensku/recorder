@@ -1,4 +1,4 @@
-package io.github.bensku.recorder.sql;
+package io.github.bensku.recorder.table;
 
 import io.github.bensku.recorder.cache.CachedQuery;
 import io.github.bensku.recorder.sql.adapter.SqlAdapter;

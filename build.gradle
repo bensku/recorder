@@ -2,28 +2,21 @@ plugins {
     id 'java-library'
 }
 
-sourceCompatibility = 14
-targetCompatibility = 14
+sourceCompatibility = 16
+targetCompatibility = 16
 
 repositories {
     jcenter()
 }
 
 dependencies {
-	implementation 'org.ow2.asm:asm:8.0.1'
+	implementation 'org.ow2.asm:asm:9.1'
 	
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.2'
-    testImplementation 'org.mockito:mockito-junit-jupiter:3.3.3'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.1'
+    testImplementation 'org.mockito:mockito-junit-jupiter:3.7.7'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.1'
 }
 
 test {
     useJUnitPlatform()
-}
-
-tasks.withType(JavaCompile) {
-    options.compilerArgs += "--enable-preview"
-}
-tasks.withType(Test) {
-    jvmArgs += "--enable-preview"
 }

@@ -1,7 +1,4 @@
-package io.github.bensku.recorder.query.mapper;
-
-import io.github.bensku.recorder.sql.JavaType;
-import io.github.bensku.recorder.sql.Table;
+package io.github.bensku.recorder.table;
 
 /**
  * Provides tables for {@link JavaType Java types}.

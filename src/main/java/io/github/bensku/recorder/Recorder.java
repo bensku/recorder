@@ -10,14 +10,14 @@ import io.github.bensku.recorder.cache.Cache;
 import io.github.bensku.recorder.cache.GlobalCache;
 import io.github.bensku.recorder.cache.QueryCache;
 import io.github.bensku.recorder.cache.QueryCaches;
+import io.github.bensku.recorder.codegen.MapperGenerator;
+import io.github.bensku.recorder.codegen.RecordMapper;
 import io.github.bensku.recorder.query.QueryHelper;
 import io.github.bensku.recorder.query.SelectBuilder;
-import io.github.bensku.recorder.query.mapper.MapperGenerator;
-import io.github.bensku.recorder.query.mapper.RecordMapper;
-import io.github.bensku.recorder.query.mapper.TableSource;
-import io.github.bensku.recorder.sql.JavaType;
-import io.github.bensku.recorder.sql.Table;
 import io.github.bensku.recorder.sql.adapter.SqlAdapter;
+import io.github.bensku.recorder.table.JavaType;
+import io.github.bensku.recorder.table.Table;
+import io.github.bensku.recorder.table.TableSource;
 
 public class Recorder {
 	

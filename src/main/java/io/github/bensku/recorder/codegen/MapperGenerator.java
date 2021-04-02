@@ -1,5 +1,6 @@
-package io.github.bensku.recorder.query.mapper;
+package io.github.bensku.recorder.codegen;
 
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -10,12 +11,15 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-import io.github.bensku.recorder.sql.Column;
-import io.github.bensku.recorder.sql.JavaType;
-import io.github.bensku.recorder.sql.Table;
+import io.github.bensku.recorder.table.Column;
+import io.github.bensku.recorder.table.JavaType;
+import io.github.bensku.recorder.table.Table;
+import io.github.bensku.recorder.table.TableSource;
 
 public class MapperGenerator implements Opcodes {
-
+	
+	private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
+	
 	private static final String READ_NAME, READ_DESC;
 	private static final String WRITE_NAME, WRITE_DESC;
 
@@ -89,11 +93,9 @@ public class MapperGenerator implements Opcodes {
 		String name = type.internalName() + "$Mapper";
 		byte[] code = createMapper(name, table.columns(), table.record().internalName());
 
-		// Load class
-		// TODO once JDK 15 lands, use loadAnonymousClass
+		// Load as hidden class
 		try {
-			SingleClassLoader loader = new SingleClassLoader(code);
-			Class<?> clazz = loader.findClass(null);
+			Class<?> clazz = LOOKUP.defineHiddenClass(code, true).lookupClass();
 			return (RecordMapper<?>) clazz.getConstructor().newInstance();
 		} catch (IllegalAccessException | InstantiationException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
 			throw new AssertionError("loading created mapper failed", e);
@@ -110,7 +112,7 @@ public class MapperGenerator implements Opcodes {
 	private byte[] createMapper(String name, Column[] columns, String recordType) {
 		ClassWriter cw = new ClassWriter(0);
 		// Ignoring generic signature, we COULD create one but don't need it
-		cw.visit(V14, ACC_PUBLIC, name, null, Type.getInternalName(Object.class),
+		cw.visit(V15, ACC_PUBLIC, name, null, Type.getInternalName(Object.class),
 				new String[] {Type.getInternalName(RecordMapper.class)});
 
 		// Make a constructor

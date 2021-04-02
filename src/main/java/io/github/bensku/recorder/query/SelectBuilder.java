@@ -9,9 +9,9 @@ import java.util.Optional;
 
 import io.github.bensku.recorder.ComponentLambda;
 import io.github.bensku.recorder.cache.CachedQuery;
-import io.github.bensku.recorder.sql.Condition;
-import io.github.bensku.recorder.sql.Value;
 import io.github.bensku.recorder.sql.adapter.SqlAdapter;
+import io.github.bensku.recorder.table.Condition;
+import io.github.bensku.recorder.table.Value;
 
 public class SelectBuilder<R extends Record> {
 	

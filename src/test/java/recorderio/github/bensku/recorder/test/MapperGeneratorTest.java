@@ -15,13 +15,13 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import io.github.bensku.recorder.query.mapper.MapperGenerator;
-import io.github.bensku.recorder.query.mapper.RecordMapper;
-import io.github.bensku.recorder.query.mapper.TableSource;
-import io.github.bensku.recorder.sql.Column;
-import io.github.bensku.recorder.sql.JavaType;
-import io.github.bensku.recorder.sql.Table;
-import io.github.bensku.recorder.sql.constraint.Constraint;
+import io.github.bensku.recorder.codegen.MapperGenerator;
+import io.github.bensku.recorder.codegen.RecordMapper;
+import io.github.bensku.recorder.table.Column;
+import io.github.bensku.recorder.table.JavaType;
+import io.github.bensku.recorder.table.Table;
+import io.github.bensku.recorder.table.TableSource;
+import io.github.bensku.recorder.table.constraint.Constraint;
 
 @ExtendWith(MockitoExtension.class)
 @TestInstance(Lifecycle.PER_CLASS)

@@ -1,19 +1,42 @@
 package io.github.bensku.recorder.record;
 
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import java.util.Objects;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+public class PrimaryKey<T> {
 
-/**
- * The annotated record component is primary key of the table in the database.
- * Only one primary key per table/record may be present.
- *
- */
-@Retention(RUNTIME)
-@Target(ElementType.RECORD_COMPONENT)
-public @interface PrimaryKey {
-
-	boolean generated() default true;
+	public static <T> PrimaryKey<T> auto() {
+		return new PrimaryKey<>(null);
+	}
+	
+	public static <T> PrimaryKey<T> of(T value) {
+		// null is marker for not-yet present keys, don't allow it to be set
+		Objects.requireNonNull(value, "primary key cannot be null");
+		return new PrimaryKey<>(value);
+	}
+	
+	private T value;
+	
+	private PrimaryKey(T value) {
+		this.value = value;
+	}
+	
+	public boolean isPresent() {
+		return value != null;
+	}
+	
+	private void guardPresent() {
+		if (!isPresent()) {
+			throw new IllegalStateException("primary key not yet present");
+		}
+	}
+	
+	public T value() {
+		guardPresent();
+		return value;
+	}
+	
+	public ForeignKey<T> foreignKey() {
+		guardPresent();
+		return new ForeignKey<>(value);
+	}
 }

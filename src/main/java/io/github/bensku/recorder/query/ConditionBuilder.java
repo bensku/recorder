@@ -1,7 +1,7 @@
 package io.github.bensku.recorder.query;
 
 import io.github.bensku.recorder.ComponentLambda;
-import io.github.bensku.recorder.sql.Condition.Type;
+import io.github.bensku.recorder.table.Condition.Type;
 
 public class ConditionBuilder<R extends Record, C> {
 	

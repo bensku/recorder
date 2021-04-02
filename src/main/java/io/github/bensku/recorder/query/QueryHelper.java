@@ -6,12 +6,12 @@ import java.sql.SQLException;
 
 import io.github.bensku.recorder.cache.CachedQuery;
 import io.github.bensku.recorder.cache.QueryCache;
-import io.github.bensku.recorder.query.mapper.RecordMapper;
-import io.github.bensku.recorder.query.mapper.TableSource;
-import io.github.bensku.recorder.sql.JavaType;
-import io.github.bensku.recorder.sql.Table;
-import io.github.bensku.recorder.sql.QueryGenerator;
+import io.github.bensku.recorder.codegen.RecordMapper;
 import io.github.bensku.recorder.sql.adapter.SqlAdapter;
+import io.github.bensku.recorder.table.JavaType;
+import io.github.bensku.recorder.table.QueryGenerator;
+import io.github.bensku.recorder.table.Table;
+import io.github.bensku.recorder.table.TableSource;
 
 /**
  * Provides access to data needed by all types of queries.

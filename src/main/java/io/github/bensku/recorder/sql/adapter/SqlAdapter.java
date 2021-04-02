@@ -3,11 +3,11 @@ package io.github.bensku.recorder.sql.adapter;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-import io.github.bensku.recorder.sql.Column;
-import io.github.bensku.recorder.sql.Condition;
-import io.github.bensku.recorder.sql.JavaType;
-import io.github.bensku.recorder.sql.Table;
-import io.github.bensku.recorder.sql.constraint.Constraint;
+import io.github.bensku.recorder.table.Column;
+import io.github.bensku.recorder.table.Condition;
+import io.github.bensku.recorder.table.JavaType;
+import io.github.bensku.recorder.table.Table;
+import io.github.bensku.recorder.table.constraint.Constraint;
 
 public interface SqlAdapter {
 

@@ -1,4 +1,4 @@
-package io.github.bensku.recorder.query.mapper;
+package io.github.bensku.recorder.codegen;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

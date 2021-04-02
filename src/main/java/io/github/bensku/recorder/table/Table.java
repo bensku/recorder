@@ -1,4 +1,4 @@
-package io.github.bensku.recorder.sql;
+package io.github.bensku.recorder.table;
 
 /**
  * A database table that represents a collection of records.

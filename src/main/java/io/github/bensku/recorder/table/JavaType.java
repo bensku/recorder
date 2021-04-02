@@ -1,4 +1,4 @@
-package io.github.bensku.recorder.sql;
+package io.github.bensku.recorder.table;
 
 import org.objectweb.asm.Type;
 
