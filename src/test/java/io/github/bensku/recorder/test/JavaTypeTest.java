@@ -1,4 +1,4 @@
-package recorderio.github.bensku.recorder.test;
+package io.github.bensku.recorder.test;
 
 import org.junit.jupiter.api.Test;
 

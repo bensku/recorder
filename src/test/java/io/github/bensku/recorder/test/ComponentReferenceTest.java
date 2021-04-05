@@ -1,4 +1,4 @@
-package recorderio.github.bensku.recorder.test;
+package io.github.bensku.recorder.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

@@ -16,7 +16,11 @@ public class PrimaryKey<T> {
 	
 	private T value;
 	
-	private PrimaryKey(T value) {
+	/**
+	 * @deprecated For internal use only.
+	 */
+	@Deprecated
+	public PrimaryKey(T value) {
 		this.value = value;
 	}
 	
@@ -35,8 +39,5 @@ public class PrimaryKey<T> {
 		return value;
 	}
 	
-	public ForeignKey<T> foreignKey() {
-		guardPresent();
-		return new ForeignKey<>(value);
-	}
+	// TODO foreign key creation, how can we identify owner of primary key?
 }
